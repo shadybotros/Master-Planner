@@ -1,0 +1,142 @@
+body {
+	margin: 0;
+	/* background: url('tum.jpg');
+	background-size: 100% 100%; */
+}
+
+.app-bg {
+	z-index: -1;
+	position: fixed;
+	width: 100%;
+	height: 100%;
+	top: 0;
+	left: 0;
+	background: url('tum2.jpg');
+	background-size: 100%;
+	background-position-y: -120px;
+}
+
+svg {
+	display: block;
+	min-width: 1000px;
+}
+
+svg text {
+	-webkit-user-select: none; /* Chrome/Safari */        
+	-moz-user-select: none; /* Firefox */
+	-ms-user-select: none; /* IE10+ */
+	
+	/* Rules below not implemented in browsers yet */
+	-o-user-select: none;
+	user-select: none;
+	
+	cursor: default;
+}
+
+.category-list-bg {
+	fill: #002143;
+	opacity: 0.75;
+}
+
+.category-name {
+	fill: white;
+	font-family: sans-serif;
+}
+
+.category-name-bg {
+	fill: #002143;
+	opacity: 0;
+}
+
+.category-name-bg:hover {
+	opacity: 0.3;
+}
+
+.selected .category-name-bg {
+	opacity: 0.25;
+}
+
+.course-name {
+	fill: white;
+	font-family: sans-serif;
+}
+
+.course-name-bg {
+	fill: #002143;
+	opacity: 0;
+}
+
+.course-name-bg:hover {
+	opacity: 0.1;
+}
+
+.cancel-category {
+	fill: white;
+	font-family: sans-serif;
+	opacity: 0;
+	-webkit-user-select: none; /* Chrome/Safari */        
+	-moz-user-select: none; /* Firefox */
+	-ms-user-select: none; /* IE10+ */
+	
+	/* Rules below not implemented in browsers yet */
+	-o-user-select: none;
+	user-select: none;
+	
+	cursor: default;
+}
+
+.selected .category-label:hover .cancel-category {
+	opacity: 1.0;
+}
+
+.area {
+	opacity: 0.85;
+}
+
+.area:hover .area-bg,
+.selected-area .area-bg {
+	stroke-opacity: 1.0;
+}
+
+.area-bg {
+	fill: white;
+	opacity: 1.0;
+	stroke-opacity: 0.5;
+	stroke: orange;
+	stroke-width: 5px;
+}
+
+.area-title {
+	font-family: sans-serif;
+}
+
+.decided-area-title {
+	font-weight: bold;
+}
+
+.area-circle {
+	fill: orange;
+	fill-opacity: 0;
+	stroke: black
+}
+
+.area-circle.full {
+	fill-opacity: 1.0;
+}
+
+.dragged .course-name {
+	opacity: 0.25;
+}
+
+.dragged .course-name-bg {
+	opacity: 0.1;
+}
+
+.picked .course-name {
+	opacity: 0.25;
+}
+
+.course-circle {
+	fill: orange;
+	opacity: 0.9;
+}
