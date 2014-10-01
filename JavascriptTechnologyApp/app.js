@@ -1125,7 +1125,9 @@ var areasData = [
 	
 	{
 		title : 'Electives',
-		category: 'Electives',
+		category: {
+			mandatory: false
+		},
 		ects : 0,
 		ectsMax : 8,
 		courses: []
@@ -1199,7 +1201,10 @@ var areas = areaList.selectAll('g.area')
 	.data(areasData)
 	.enter()
 	.append('g')
-	.attr('class', 'area');
+	.attr('class', 'area')
+	.attr('id', function(d, i) {
+		return 'a' + i;
+	});
 
 // create area-groups bg
 areas.append('rect')
@@ -1432,100 +1437,127 @@ function dragEnd() {
 	var areaData = selectedArea.data()[0];
 	var course = d3.select('.dragged');
 	var categoryData = d3.select(course[0][0].parentNode).data()[0];
-	var circles = course.select('.course-circle-list');
+	var circleGroup = course.select('.course-circle-list');
+	var electivesArea = d3.select('#a3');
+	var electivesData = electivesArea.data()[0];
 	
 	// if there is a selected area and the choice is allowed
 	if(selectedArea.size() > 0 && isLegalArea(areaData, categoryData)) {
-		
-		var ectsToAdd = course.data()[0].ECTS;
-		
+		// change course style
 		course.classed('picked', true);
 		course.call(removeDrag);
 		
-		// if course added doesn't overflow ects
-		if(areaData.ects + ectsToAdd <= areaData.ectsMax) {
-			
-			// translate circles to empty ones
-			var firstCircle = circles.select('circle');
-			var firstCircleTranslate = d3.transform(circles.attr('transform')).translate;
-			var effectiveStartX = parseInt(firstCircle.attr('cx')) + parseInt(firstCircleTranslate[0]) + categoryListWidth;
-			var effectiveStartY = parseInt(firstCircle.attr('cy')) + parseInt(firstCircleTranslate[1]);
-			
-			var firstEmptyCircle = d3.select(d3.select('.selected-area').selectAll('circle')[0][areaData.ects]);
-			var firstEmptyCircleTranslate = d3.transform(areaList.attr('transform')).translate;
-			var effectiveEmptyStartX = parseInt(firstEmptyCircle.attr('cx')) + parseInt(firstEmptyCircleTranslate[0]);
-			var effectiveEmptyStartY = parseInt(firstEmptyCircle.attr('cy')) + parseInt(firstEmptyCircleTranslate[1]);
-			
-			var deltaX = effectiveEmptyStartX - effectiveStartX;
-			var deltaY = effectiveEmptyStartY - effectiveStartY;
-			circles.selectAll('circle')
-				.transition()
-				.duration(750)
-				.delay(function(d, i) {
-					return i * 50;
-				})
-				.attr('transform', 'translate(' + deltaX + ', ' + deltaY + ')')
-				.each('end', function(d, i) {
-					// execute only once
-					if(i == 0) {
-						// change fill of corresponding area circles
-						var counter = areaData.ects;
-						selectedArea.selectAll('circle').each(function(d, i) {
-							if(i == counter) {
-								d3.select(this).classed('full', true);
-								if(++counter >= areaData.ects + ectsToAdd) {
-									counter = 100000000;
-								}
-							}
-						});
-						
-						// delete course circles
-						circles.remove();
-						
-						// adjust area data
-						areaData.ects += ectsToAdd;
-						if(areaData.category == null) {
-							areaData.category = categoryData;
-							// print category name
-							selectedArea.select('text')
-								.text(areaData.category.name)
-								.classed('decided-area-title', true)
-						}
-						areaData.courses.push(course.data()[0]);
-						
-						if(areaData.category.mandatory) {
-							mandatoryAreaPicked = true;
-						}
-						
-					}
-				});
-			
+		var ectsToAdd = course.data()[0].ECTS;
+		var overflow = Math.max(0, areaData.ects + ectsToAdd - areaData.ectsMax);
+		// if course added doesn't overflow ects or is electives
+		if(overflow <= 0 || areaData.title == 'Electives') {
+			moveCirclesToArea(circleGroup, circleGroup.selectAll('circle'), selectedArea, areaData.ects, ectsToAdd - overflow);
+			addEctsToAreaData(areaData, categoryData, course, ectsToAdd - overflow);
 		}
 			
-		// if course added overflows ects (need to add extra ects to electives)
+		// if course added overflows ects
+		// need to add extra ects to electives or drop extra elective ects
 		else {
+			if(electivesData.ects >= electivesData.ectsMax) {
+				moveCirclesToArea(circleGroup, circleGroup.selectAll('circle'), selectedArea, areaData.ects, ectsToAdd - overflow);
+				addEctsToAreaData(areaData, categoryData, course, ectsToAdd - overflow);
+			}
 			
+			else {
+				var normalCircles = d3.selectAll(circleGroup.selectAll('circle')[0].slice(0, -overflow));
+				moveCirclesToArea(circleGroup, normalCircles, selectedArea, areaData.ects, ectsToAdd - overflow);
+				addEctsToAreaData(areaData, categoryData, course, ectsToAdd - overflow);
+				
+				var overflowCircles = d3.selectAll(circleGroup.selectAll('circle')[0].slice(-overflow));
+				var electivesOverflow = Math.max(0, electivesData.ects + overflow - electivesData.ectsMax);
+				moveCirclesToArea(circleGroup, overflowCircles, electivesArea, electivesData.ects, overflow - electivesOverflow);
+				addEctsToAreaData(electivesData, categoryData, course, overflow - electivesOverflow);
+			}
 		}
 	}
 	
 	else {
-		circles.remove();
+		circleGroup.remove();
 	}
 	
 	course.classed('dragged', false);
 	selectedArea.classed('selected-area', false);
 }
 
+function addEctsToAreaData(areaData, categoryData, course, ectsToAdd) {
+	// adjust area data
+	areaData.ects += ectsToAdd;
+	if(areaData.category == null) {
+		areaData.category = categoryData;
+		// print category name
+		selectedArea.select('text')
+			.text(areaData.category.name)
+			.classed('decided-area-title', true);
+	}
+	areaData.courses.push(course.data()[0]);
+	
+	if(areaData.category.mandatory) {
+		mandatoryAreaPicked = true;
+	}
+} 
+
+function moveCirclesToArea(circleGroup, circles, selectedArea, areaEcts, ectsToAdd) {
+	// translate circles to empty ones
+	var firstCircle = d3.select(circles[0][0]);
+	var firstCircleTranslate = d3.transform(circleGroup.attr('transform')).translate;
+	var effectiveStartX = parseInt(firstCircle.attr('cx')) + parseInt(firstCircleTranslate[0]) + categoryListWidth;
+	var effectiveStartY = parseInt(firstCircle.attr('cy')) + parseInt(firstCircleTranslate[1]);
+	
+	var firstEmptyCircle = d3.select(selectedArea.selectAll('circle')[0][areaEcts]);
+	var firstEmptyCircleTranslate = d3.transform(areaList.attr('transform')).translate;
+	var effectiveEmptyStartX = parseInt(firstEmptyCircle.attr('cx')) + parseInt(firstEmptyCircleTranslate[0]);
+	var effectiveEmptyStartY = parseInt(firstEmptyCircle.attr('cy')) + parseInt(firstEmptyCircleTranslate[1]);
+	
+	var deltaX = effectiveEmptyStartX - effectiveStartX;
+	var deltaY = effectiveEmptyStartY - effectiveStartY;
+	circles.transition()
+		.duration(850)
+		.delay(function(d, i) {
+			return i * 50;
+		})
+		.attr('transform', 'translate(' + deltaX + ', ' + deltaY + ')')
+		.each('end', function(d, i) {
+			// execute only once
+			if(i == 0) {
+				// change fill of corresponding area circles
+				var counter = areaEcts;
+				selectedArea.selectAll('circle').each(function(d, i) {
+					if(i == counter) {
+						d3.select(this).classed('full', true);
+						if(++counter >= areaEcts + ectsToAdd) {
+							counter = 100000000;
+						}
+					}
+				});
+				
+				// delete course circles
+				circles.remove();
+				
+			}
+		});
+}
+
 function isLegalArea(areaData, categoryData) {
-	// area should not already have a category
+	// if area is electives then no restrictions are imposed
+	if(areaData.title === 'Electives') {
+		return true;
+	}
+	
+	// area should not already have a different assigned category
 	if(areaData.category != null
 		&& areaData.category.name != categoryData.name) {
-		
+		console.log('Area is already assigned a category');
 		return false;
 	}
 	
 	// area should not be full (ects == ectsMax)
 	if(areaData.ects >= areaData.ectsMax) {
+		console.log('Area already full');
 		return false;
 	}
 	
@@ -1536,12 +1568,12 @@ function isLegalArea(areaData, categoryData) {
 		if(d.category != null
 			&& d.category.name == categoryData.name
 			&& d.title != areaData.title) {
-			
 			pass = false;
 		}
 	});
 	
 	if(!pass) {
+		console.log('This category has already been assigned to another area');
 		return false;
 	}
 	
@@ -1559,6 +1591,7 @@ function isLegalArea(areaData, categoryData) {
 	}
 	
 	if(!pass) {
+		console.log('Must pick a mandatory category');
 		return false;
 	}
 	
@@ -1580,7 +1613,7 @@ function dragMove(data) {
 	var areasEffectiveX = areasX + areasTranslate[0];
 	var areasEffectiveY = areasY + areasTranslate[1];
 	
-	// detect if mouse if over area
+	// detect if mouse is over area
 	var mouseX = d3.event.sourceEvent.pageX;
 	var mouseY = d3.event.sourceEvent.pageY;
 	areas.each(function(d, i) {
@@ -1601,7 +1634,5 @@ function dragMove(data) {
 // detect and handle window scrolling
 window.onscroll = scrollHandler;
 function scrollHandler(e) {
-	areaList.transition()
-		.duration(500)
-		.attr('transform', 'translate (0, ' + window.pageYOffset + ')');
+	areaList.attr('transform', 'translate (0, ' + window.pageYOffset + ')');
 }

@@ -14,6 +14,7 @@ body {
 	background: url('tum2.jpg');
 	background-size: 100%;
 	background-position-y: -120px;
+	opacity: 0.8;
 }
 
 svg {
@@ -34,8 +35,8 @@ svg text {
 }
 
 .category-list-bg {
-	fill: #002143;
-	opacity: 0.75;
+	fill: #B28F50;
+	opacity: 0.6;
 }
 
 .category-name {
@@ -44,7 +45,7 @@ svg text {
 }
 
 .category-name-bg {
-	fill: #002143;
+	fill: black;
 	opacity: 0;
 }
 
@@ -62,12 +63,12 @@ svg text {
 }
 
 .course-name-bg {
-	fill: #002143;
+	fill: black;
 	opacity: 0;
 }
 
 .course-name-bg:hover {
-	opacity: 0.1;
+	opacity: 0.15;
 }
 
 .cancel-category {
@@ -133,7 +134,7 @@ svg text {
 }
 
 .picked .course-name {
-	opacity: 0.25;
+	opacity: 0.35;
 }
 
 .course-circle {
